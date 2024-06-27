@@ -28,119 +28,59 @@
       ]
     },
     {
-      "name": "llvm-stage1",
-      "buildsystem": "cmake-ninja",
-      "subdir": "llvm",
-      "builddir": true,
-      "build-options": {
-        "prefix": "/usr/lib/sdk/llvm18/llvm-stage1",
-        "arch": {
-          "aarch64": {
-            "config-opts": [
-              "-DLLVM_DEFAULT_TARGET_TRIPLE=aarch64-unknown-linux-gnu"
-            ]
-          },
-          "x86_64": {
-            "config-opts": [
-              "-DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-unknown-linux-gnu"
-            ]
+        "name": "llvm",
+        "buildsystem": "simple",
+        "subdir": "llvm",
+        "build-options": {
+          "prepend-path": "/usr/lib/sdk/llvm18/bin",
+          "cflags": "",
+          "cxxflags": "",
+          "ldflags": "-Wl,--disable-new-dtags",
+          "arch": {
+            "aarch64": {
+              "env": {
+                "DEFAULT_TARGET_TRIPLE": "aarch64-unknown-linux-gnu",
+                "TARGETS_TO_BUILD": "AArch64;AMDGPU;NVPTX;WebAssembly"
+              }
+            },
+            "x86_64": {
+              "env": {
+                "DEFAULT_TARGET_TRIPLE": "x86_64-unknown-linux-gnu",
+                "TARGETS_TO_BUILD": "X86;AMDGPU;NVPTX;WebAssembly"
+              }
+            }
           }
         },
-        "env": {
-          "CFLAGS": "",
-          "CXXFLAGS": "",
-          "LDFLAGS": ""
-        }
-      },
-      "config-opts": [
-        "-DCMAKE_BUILD_TYPE=Release",
-        "-DLLVM_ENABLE_PROJECTS='clang;lld'",
-        "-DLLVM_TARGETS_TO_BUILD='Native'",
-        "-DLLVM_LIBDIR_SUFFIX=''",
-        "-DLLVM_INCLUDE_TESTS:BOOL=OFF",
-        "-DLLVM_INCLUDE_EXAMPLES:BOOL=OFF",
-        "-DLLVM_INCLUDE_DOCS:BOOL=OFF",
-        "-DLLVM_INCLUDE_BENCHMARKS=OFF",
-        "-DLLVM_INSTALL_UTILS:BOOL=ON",
-        "-DLLVM_BINUTILS_INCDIR=/usr/include",
-        "-DLLVM_BUILD_RUNTIME:BOOL=OFF",
-        "-DLLVM_TOOL_CLANG_TOOLS_EXTRA_BUILD:BOOL=OFF",
-        "-DCLANG_ENABLE_ARCMT:BOOL=OFF",
-        "-DCLANG_ENABLE_STATIC_ANALYZER:BOOL=OFF",
-        "-Wno-dev"
-      ],
-      "cleanup": [
-        "*"
-      ],
-      "sources": [
-        "llvm-stage1-sources.json"
-      ]
-    },
-    {
-      "name": "llvm",
-      "buildsystem": "cmake-ninja",
-      "subdir": "llvm",
-      "builddir": true,
-      "build-options": {
-        "prepend-path": "/usr/lib/sdk/llvm18/llvm-stage1/bin",
-        "arch": {
-          "aarch64": {
-            "cflags": "-Qunused-arguments",
-            "cxxflags": "-Qunused-arguments",
-            "config-opts": [
-              "-DLLVM_DEFAULT_TARGET_TRIPLE=aarch64-unknown-linux-gnu",
-              "-DLLVM_TARGETS_TO_BUILD='AArch64;AMDGPU;NVPTX;WebAssembly'"
-            ]
-          },
-          "x86_64": {
-            "config-opts": [
-              "-DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-unknown-linux-gnu",
-              "-DLLVM_TARGETS_TO_BUILD='X86;AMDGPU;NVPTX;WebAssembly'"
-            ]
-          }
-        },
-        "env": {
-          "CC": "clang",
-          "CXX": "clang++"
-        },
-        "ldflags": "-Wl,--disable-new-dtags"
-      },
-      "config-opts": [
-        "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
-        "-DCMAKE_C_FLAGS_RELWITHDEBINFO='-DNDEBUG'",
-        "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO='-DNDEBUG'",
-        "-DLLVM_TABLEGEN=/usr/lib/sdk/llvm18/llvm-stage1/bin/llvm-tblgen",
-        "-DCMAKE_AR=/usr/lib/sdk/llvm18/llvm-stage1/bin/llvm-ar",
-        "-DCMAKE_RANLIB=/usr/lib/sdk/llvm18/llvm-stage1/bin/llvm-ranlib",
-        "-DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;compiler-rt;lld;lldb'",
-        "-DLLVM_BUILD_LLVM_DYLIB:BOOL=ON",
-        "-DLLVM_ENABLE_LLD:BOOL=ON",
-        "-DLLVM_LINK_LLVM_DYLIB:BOOL=ON",
-        "-DLLVM_LIBDIR_SUFFIX=''",
-        "-DLLVM_ENABLE_FFI:BOOL=ON",
-        "-DLLVM_ENABLE_RTTI:BOOL=ON",
-        "-DLLVM_INCLUDE_TESTS:BOOL=OFF",
-        "-DLLVM_INCLUDE_EXAMPLES:BOOL=OFF",
-        "-DLLVM_INCLUDE_UTILS:BOOL=ON",
-        "-DLLVM_INSTALL_UTILS:BOOL=ON",
-        "-DLLVM_INCLUDE_DOCS:BOOL=OFF",
-        "-DLLVM_TOOL_LLVM_EXEGESIS_BUILD:BOOL=OFF",
-        "-DLLVM_BINUTILS_INCDIR=/usr/include",
-        "-DCLANG_LINK_CLANG_DYLIB=ON",
-        "-DLLDB_USE_SYSTEM_SIX:BOOL=ON",
-        "-DLLDB_ENABLE_PYTHON:BOOL=ON",
-        "-DLLDB_ENABLE_CURSES:BOOL=ON",
-        "-DCURSES_NEED_NCURSES=ON",
-        "-Wno-dev"
-      ],
-      "cleanup": [
-        "/include/clang-tidy",
-        "/include/lld",
-        "/lib/cmake/lld"
-      ],
-      "sources": [
-        "llvm-sources.json"
-      ]
+        "build-commands": ["utils/collect_and_build_with_pgo.py \\
+            --out-dir BUILDDIR
+            --cmake-extra-arg CMAKE_PREFIX=/usr/lib/sdk/llvm18 \\
+            --cmake-extra-arg LLVM_DEFAULT_TARGET_TRIPLE=${DEFAULT_TARGET_TRIPLE} \\
+            --cmake-extra-arg LLVM_TARGETS_TO_BUILD=${TARGETS_TO_BUILD} \\
+            --cmake-extra-arg LLVM_BUILD_LLVM_DYLIB:BOOL=ON \\
+            --cmake-extra-arg LLVM_LINK_LLVM_DYLIB:BOOL=ON \\
+            --cmake-extra-arg LLVM_ENABLE_FFI:BOOL=ON \\
+            --cmake-extra-arg LLVM_ENABLE_RTTI:BOOL=ON \\
+            --cmake-extra-arg LLVM_INCLUDE_TESTS:BOOL=OFF \\
+            --cmake-extra-arg LLVM_INCLUDE_EXAMPLES:BOOL=OFF \\
+            --cmake-extra-arg LLVM_INCLUDE_UTILS:BOOL=ON \\
+            --cmake-extra-arg LLVM_INSTALL_UTILS:BOOL=ON \\
+            --cmake-extra-arg LLVM_INCLUDE_DOCS:BOOL=OFF \\
+            --cmake-extra-arg LLVM_TOOL_LLVM_EXEGESIS_BUILD:BOOL=OFF \\
+            --cmake-extra-arg LLVM_BINUTILS_INCDIR=/usr/include \\
+            --cmake-extra-arg CLANG_BUILD_CLANG_DYLIB=ON \\
+            --cmake-extra-arg CLANG_LINK_CLANG_DYLIB=ON \\
+            --cmake-extra-arg LLDB_USE_SYSTEM_SIX:BOOL=ON \\
+            --cmake-extra-arg LLDB_ENABLE_PYTHON:BOOL=ON \\
+            --cmake-extra-arg LLDB_ENABLE_CURSES:BOOL=ON \\
+            --cmake-extra-arg CURSES_NEED_NCURSES=ON"],
+        "cleanup": [
+          "/include/clang-tidy",
+          "/include/lld",
+          "/lib/cmake/lld"
+        ],
+        "sources": [
+          "llvm-sources.json"
+        ]
     },
     {
       "name": "scripts",
